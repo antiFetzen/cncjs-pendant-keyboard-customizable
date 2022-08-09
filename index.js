@@ -5,6 +5,7 @@ const path = require('path');
 const io = require('socket.io-client');
 const jwt = require('jsonwebtoken');
 const get = require('lodash/get');
+const CncjsKeyboard = require('./utils/CncjsKeyboard');
 
 const generateAccessToken = function(payload, secret, expiration) {
     const token = jwt.sign(payload, secret, {
@@ -89,4 +90,79 @@ module.exports = function(options, callback) {
         console.log((data || '').trim());
     });
     */
+
+
+    // TODO: Do implementation
+          // TODO: implement keyboard handling
+
+
+        // console.log('Options', options)
+          
+        const keyboard = new CncjsKeyboard(
+            options.devicePath,
+            socket,
+            options.port,
+            options.config,
+            { verbose: options.verbose }
+        )
+
+
+
+        //   const global = {
+        //     step: 0,
+        //     }
+                           
+
+            // const keyboard = new CncjsKeyboard('by-id/usb-Telink_Wireless_Receiver_TLSR8366-if01-event-kbd', true, socket, options.port, global)
+    
+            // keyboard.createVerboseEventListeners()
+    
+            // console.log('Start CNCJS keyboard')
+    
+            //https://github.com/cncjs/cncjs-controller/blob/master/src/controller.js#L213
+            //https://github.com/cncjs/cncjs/wiki/Controller-API
+    
+    
+            // const config = require('./config/surno-iee.wirelesseNumericKeypad')
+
+            // console.log(config)
+            // console.log(config.global)
+            // console.log(config.events)
+
+
+            // keyboard.on('KEY_ESC:keypress', ({ $socket, $port }) => $socket.emit('command', $port, 'reset'))
+            // keyboard.on('KEY_TAB:keypress', ({ $socket, $port }) => $socket.emit('command', $port, 'sleep'))
+            // keyboard.on('KEY_EQUAL:keypress', ({ $socket, $port }) => $socket.emit('command', $port, 'unlock'))
+            // keyboard.on('KEY_BACKSPACE:keypress', ({ $socket, $port }) => $socket.emit('command', $port, 'reset'))
+    
+            // // TODO: change event names
+
+            // keyboard.on('KEY_UP:keypress', ({$socket, $port, $global}) => {
+            //     $socket.emit('write', $port, 'G91;\n')
+            //     $socket.emit('write', $port, 'G0 Y' + $global.step + ';;\n')
+            //     $socket.emit('write', $port, 'G90;\n')
+            // })
+            // keyboard.on('KEY_DOWN:keypress', ({$socket, $port, $global}) => {
+            //     $socket.emit('write', $port, 'G91;\n')
+            //     $socket.emit('write', $port, 'G0 Y-' + $global.step + ';;\n')
+            //     $socket.emit('write', $port, 'G90;\n')
+            // })
+            // keyboard.on('KEY_LEFT:keypress', ({$socket, $port, $global}) => {
+            //     $socket.emit('write', $port, 'G91;\n')
+            //     $socket.emit('write', $port, 'G0 X-' + $global.step + ';;\n')
+            //     $socket.emit('write', $port, 'G90;\n')
+            // })
+            // keyboard.on('KEY_RIGHT:keypress', ({$socket, $port, $global}) => {
+            //     $socket.emit('write', $port, 'G91;\n')
+            //     $socket.emit('write', $port, 'G0 X' + $global.step + ';\n')
+            //     $socket.emit('write', $port, 'G90;\n')
+            // })
+    
+
+
+
+            // keyboard.on('KEY_INSERT:keypress', ({ $global }) => $global.step = 1)
+            // keyboard.on('KEY_HOME:keypress', ({ $global }) => $global.step = 5)
+            // keyboard.on('KEY_PAGEUP:keypress', ({ $global }) => $global.step = 10)
+    
 };

@@ -14,3 +14,6 @@ Run `bin/cncjs-pendant-boilerplate` to start the interactive client. Pass --help
 ```
 bin/cncjs-pendant-boilerplate --help
 ```
+
+            //https://github.com/cncjs/cncjs-controller/blob/master/src/controller.js#L213
+            //https://github.com/cncjs/cncjs/wiki/Controller-API
