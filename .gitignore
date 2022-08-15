@@ -21,7 +21,11 @@
 /.nb-gradle/
 /build/
 
+### MAC OSX ###
 .DS_Store
+
+### NODEJS ###
+/node_modules/
 
 ### Custom ###
 /config/

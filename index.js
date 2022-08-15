@@ -85,7 +85,7 @@ module.exports = function(options, callback) {
         console.log((data || '').trim());
     });
 
-    CncjsKeyboard(
+    const keyboard = new CncjsKeyboard(
         options.devicePath,
         socket,
         options.port,

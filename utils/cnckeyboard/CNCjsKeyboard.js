@@ -102,7 +102,7 @@ class CNCjsKeyboard extends ExclusiveKeyboard {
    */
   readConfigFile(configName = 'default') {
     try {
-      return require(`../config/${configName}`)
+      return require(`../../config/${configName}`)
     } catch (e) {
       if (e.code === 'MODULE_NOT_FOUND') throw new Error(`CNCjsKeyboard config module "./config/${configName}.js" could not found or open!
       Please check the file or create it.
@@ -126,7 +126,7 @@ class CNCjsKeyboard extends ExclusiveKeyboard {
 
     // register event listeners
     config.events.forEach(({event, callback, description}) => this.on.call(this, event, (...args) => {
-      console.info(`Triggered Event: ${fillSpace('[' + ${event} + ']', 25)} - ${description}`)
+      console.info(`Triggered Event: ${fillSpace('[' + event + ']', 25)} - ${description}`)
       return callback.call(this, ...args)
     }))
   }
