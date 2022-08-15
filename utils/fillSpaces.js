@@ -1,4 +1,4 @@
-const fillSpace = (value, width, options = {}) => {
+const fillSpaces = (value, width, options = {}) => {
   const { filler, prepend } = {
     filler: ' ',
     prepend: false,
@@ -10,10 +10,10 @@ const fillSpace = (value, width, options = {}) => {
   const count = width - value.length
 
   const filled = filler.repeat(count > 0 ? count : 0)
-  
+
   return prepend
     ? filled + value
     : value + filled
 }
 
-module.exports = fillSpace
+module.exports = fillSpaces

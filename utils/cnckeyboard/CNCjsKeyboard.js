@@ -1,26 +1,40 @@
 const ExclusiveKeyboard = require('exclusive-keyboard')
-const CncjsKeyboardConfigBuilder = require('./CncjsKeyboardConfigBuilder')
-
-const fillSpace = require('./fillSpace')
-
-const config = {
-  global: {
-    steps: 0,
-  },
-  events: [
-    {
-      keyIdentifier: 'KEY_1',
-      description: 'Do amazing stuff',
-      callback: (writeCommand, getKeyState, global) => {
-        
-      }
-    }
-  ]
-}
+const fillSpace = require('../fillSpaces')
 
 const KEY_EVENTS = ['keyup', 'keydown', 'keypress']
 
-class CncjsKeyboard extends ExclusiveKeyboard {
+
+/**
+ * @typedef {Object} KeyEventContext
+ * @property {number} keyCode number of the key
+ * @property {string} keyId name of the key e.g. 'KEY_ESG'
+ * @property {string} type event type: ['keypress'|'keyuo'|'keydown']
+ * @property {string} dev device path
+ */
+
+/**
+ * @typedef {Object} CNCjsKeyboardOptions
+ * @property {boolean} exclusive set if the device should exclusive used vor CNCjsKeyboard (default: true)
+ * @property {boolean} verbose print verbose event options (default: true)
+ */
+
+/**
+ * @typedef {Object} CNCjsKeyboardEventContext
+ * @property {socket} $socket socket instance of CNCjs
+ * @property {emitSocket} $emit wrapper to emit an event to CNCjs. The port parameter is already set!
+ * @property {emitSocketWrite} $write wrapper to emit a write event to CNCjs.
+ * The port and event parameter is already set!
+ * @property {string} $port port of the connected CNC
+ * @property {Object} $global access to the global data instance
+ * @property {getKeyState} $getKeyState read the current value of a key
+ * @property {string} keyId named key identifier of the triggert key e.g.: `KEY_ESC`
+ * @property {number} keyCode number of the triggert key
+ * @property {KEY_EVENTS} event type of the triggered event
+ * @property {string} dev device path of the keyboard
+ * @property {boolean} value state of the triggered key
+ */
+
+class CNCjsKeyboard extends ExclusiveKeyboard {
   /** store the current key states */
   keyStates = {}
 
@@ -28,14 +42,12 @@ class CncjsKeyboard extends ExclusiveKeyboard {
   global = {}
 
   /**
-   * CncjsKeyboard constructor
+   * CNCjsKeyboard constructor
    * @param {string} device path of the device after `/dev/input/`
-   * @param {Socket} socket cncjs-pendant `socket` object
-   * @param {string} port cncjs-pendant `port`
-   * @param {string | CncjsKeyboardConfigBuilder} config config name(wihtin directory `/config/`, without extension `.js`) or config class (default: 'default')
-   * @param {object} options
-   * @property {boolean} exclusive set if the device should exclusive used vor CncjsKeyboard (default: true)
-   * @property {boolean} verbose print vebose event options (default: true)
+   * @param {socket} socket parent reference of cncjs-pendant to `socket` object
+   * @param {string} port parent reference of cncjs-pendant `port`
+   * @param {string | ConfigBuilder} config config name(within directory `/config/`, without extension `.js`) or config class (default: 'default')
+   * @param {CNCjsKeyboardOptions} options
    */
   constructor(device, socket, port, config, options) {
     const {exclusive, verbose} = {
@@ -50,7 +62,7 @@ class CncjsKeyboard extends ExclusiveKeyboard {
     this.port = port
 
     KEY_EVENTS.forEach(eventName => this.on(eventName, this.emitKeyEvent(eventName)))
-    
+
     if (verbose) this.createVerboseEventListeners()
 
     if (config) this.processConfig(config)
@@ -58,21 +70,21 @@ class CncjsKeyboard extends ExclusiveKeyboard {
 
   /**
    * Validate the config data
-   * @param {*} config 
+   * @param {ConfigBuilder} config
    */
   validateConfig(config) {
     if (typeof config !== 'object') throw new Error('The config is not of the type "object"!')
-  
+
     if (!config.hasOwnProperty('global')) throw new Error(`The property "global" was not found!`)
-  
+
     if (!config.hasOwnProperty('events')) throw new Error(`The property "events" was not found!`)
     if (!Array.isArray(config.events)) throw new Error(`The property "events" have to be a array!`)
-  
-  
+
+
     const validateEventItemProperty = (item, index, propertyName, type) => item.hasOwnProperty(propertyName)
       ? typeof item[propertyName] === type || `events[${index}].${propertyName} | Type "${typeof item[propertyName]}" doesn't match type "${type}"!`
       : `events[${index}].${propertyName} |  Does not exist!`
-  
+
     const eventValidation = config.events
       .map((item, index) => [
         validateEventItemProperty(item, index, 'event', 'string'),
@@ -80,26 +92,21 @@ class CncjsKeyboard extends ExclusiveKeyboard {
       ])
       .flat()
       .filter(i => i !== true)
-    
+
     if (eventValidation.length) throw new Error('Validation of the events failed:\n' + eventValidation.map(i => ' - ' + i).join('\n'))
   }
 
   /**
    * Read a config file within the config directory `./config/<filename>`(without extension `.js`)
-   * @param {*} configName 
+   * @param {string} configName name of the config file (without extension)
    */
   readConfigFile(configName = 'default') {
-    let config = null
-  
     try {
-       return require(`../config/${configName}`)    
+      return require(`../config/${configName}`)
     } catch (e) {
-      console.error('ERROR')
-      console.error(e)
-
-      if (e.code === 'MODULE_NOT_FOUND') throw new Error(`CnnjsKeyboard config module "./config/${configName}.js" could not found or open!
+      if (e.code === 'MODULE_NOT_FOUND') throw new Error(`CNCjsKeyboard config module "./config/${configName}.js" could not found or open!
       Please check the file or create it.
-      You can finde more detailse within the READEME.md.`)
+      You can finde more details within the README.md.`)
 
       throw e
     }
@@ -107,7 +114,7 @@ class CncjsKeyboard extends ExclusiveKeyboard {
 
   /**
    * Read, validate and process the config
-   * @param {string | CncjsKeyboardConfigBuilder} config 
+   * @param {string | ConfigBuilder} config
    */
   processConfig(config) {
     if (typeof config === 'string') config = this.readConfigFile(config)
@@ -118,19 +125,18 @@ class CncjsKeyboard extends ExclusiveKeyboard {
     this.global = config.global || {}
 
     // register event listeners
-    config.events.forEach(({ event, callback, description }) => this.on.call(this, event, (...args) => {
-      console.info(`Triggered Event: ${fillSpace(`[${event}]`, 25)} - ${description}`)  
+    config.events.forEach(({event, callback, description}) => this.on.call(this, event, (...args) => {
+      console.info(`Triggered Event: ${fillSpace('[' + ${event} + ']', 25)} - ${description}`)
       return callback.call(this, ...args)
     }))
   }
 
-
   /**
    * Helper function to print verbose event log
-   * @param {object} data Key event data for: 'keyup', 'keydown', 'keypress'
+   * @param {KeyEventContext} data Key event data for: 'keyup', 'keydown', 'keypress'
    */
-  printVerboseKeyEvent({ keyCode, keyId, type }) {
-    console.info(`Event: ${fillSpace(type, 10)} => #${fillSpace(keyCode, 3, { prepend: true })} [${keyId}]`)
+  printVerboseKeyEvent({keyCode, keyId, type}) {
+    console.info(`Event: ${fillSpace(type, 10)} => #${fillSpace(keyCode, 3, {prepend: true})} [${keyId}]`)
   }
 
   /**
@@ -156,7 +162,7 @@ class CncjsKeyboard extends ExclusiveKeyboard {
 
   /**
    * Return the state of the current key event
-   * @param {[string | number]} key `keyId` or `keyCode`
+   * @param {string |number} key `keyId` or `keyCode`
    * @returns boolean
    */
   getKeyState(key) {
@@ -165,8 +171,8 @@ class CncjsKeyboard extends ExclusiveKeyboard {
 
   /**
    * Shorthand version of the socket emit method with prefilled port
-   * @param {*} event Name of the event
-   * @param  {...any} args  
+   * @param {string} event Name of the event
+   * @param  {...any} args
    */
   emitSocket(event, ...args) {
     this.socket.emit(event, this.port, ...args)
@@ -175,7 +181,7 @@ class CncjsKeyboard extends ExclusiveKeyboard {
   /**
    * Special helper to send commands on the `write` event.
    * It should help you to emit on a short way a list of commands
-   * @param {string | string[]} commandList 
+   * @param {string | string[]} commandList
    * @param {boolean} addLineEnding if `true`(default) at the end of every item will append `;\n`
    */
   emitSocketWrite(commandList, addLineEnding = true) {
@@ -189,17 +195,17 @@ class CncjsKeyboard extends ExclusiveKeyboard {
 
   /**
    * Event emitter for the single key event.
-   * This method emitts for `keyId` and `keyCode` a general emitter and a type based one.
+   * This method emits for `keyId` and `keyCode` a general emitter and a type based one.
    * The following events are available:
    *  - `<keyId>` e.g.: `'KEY_ESC'`
    *  - `<keyId>:<eventType>` e.g.: `'KEY_ESC:keypress'`
    *  - `<keyCode>` e.g.: `'0'`
    *  - `<keyCode>:<eventType>` e.g.: `'0:keypress'`
-   * @param {*} eventName 
-   * @returns void
+   * @param {string} eventName
+   * @returns function(KeyEventContext)
    */
   emitKeyEvent(eventName) {
-    return function({ keyId, keyCode, type, dev }) {
+    return function ({keyId, keyCode, type, dev}) {
       const value = eventName === 'keyup' ? false : true
       this.setKeyState(keyId, keyCode, value)
 
@@ -223,12 +229,10 @@ class CncjsKeyboard extends ExclusiveKeyboard {
         `${keyCode}:${eventName}`,
         `${keyCode}`,
       ]
-      
+
       events.forEach(event => this.emit(event, ctx))
     }
   }
-
- 
 }
 
-module.exports = CncjsKeyboard
+module.exports = CNCjsKeyboard
